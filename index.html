@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whack-a-Duck: GE-3 Vocabulary Pond</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Bungee&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      background: radial-gradient(circle at center, #0284c7 0%, #0369a1 40%, #082f49 100%);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    .font-game {
+      font-family: 'Fredoka One', cursive;
+    }
+    .font-arcade {
+      font-family: 'Bungee', cursive;
+    }
+
+    /* Pond Hole & Water Ripple Styling */
+    .water-hole {
+      background: radial-gradient(ellipse at center, #075985 0%, #0c4a6e 65%, #082f49 100%);
+      box-shadow: inset 0 10px 18px rgba(0, 0, 0, 0.8), 0 6px 12px rgba(2, 132, 199, 0.35);
+      border: 4px solid #38bdf8;
+      position: relative;
+    }
+    .lily-pad {
+      background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      border: 2px solid #4ade80;
+    }
+
+    /* Duck Pop-Up Dynamics */
+    .duck-wrapper {
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%) translateY(125%);
+      transition: transform 0.26s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+      cursor: pointer;
+      will-change: transform;
+    }
+    .duck-wrapper.up {
+      transform: translateX(-50%) translateY(5%);
+    }
+    .duck-wrapper.whacked {
+      transform: translateX(-50%) translateY(75%) rotate(18deg) scale(0.9);
+      transition: transform 0.16s ease-in;
+    }
+
+    /* Whack Splash Effect */
+    .splash-star {
+      animation: popSplash 0.38s ease-out forwards;
+    }
+    @keyframes popSplash {
+      0% { transform: scale(0.3) rotate(0deg); opacity: 1; }
+      50% { transform: scale(1.35) rotate(12deg); opacity: 1; }
+      100% { transform: scale(1.65) rotate(25deg); opacity: 0; }
+    }
+
+    .glow-gold {
+      box-shadow: 0 0 24px rgba(250, 204, 21, 0.45);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.45);
+    }
+  </style>
+</head>
+
+<body class="text-slate-100 flex flex-col justify-between p-2.5 sm:p-4 select-none">
+
+  <!-- Header Dashboard -->
+  <header class="max-w-5xl w-full mx-auto bg-slate-900/90 backdrop-blur-md border-2 border-sky-400/40 rounded-3xl p-3 sm:p-4 shadow-2xl mb-2.5">
+    <div class="flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Title & Student identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-amber-400 text-slate-950 rounded-2xl flex items-center justify-center text-3xl shadow-lg border-2 border-amber-200">
+          🦆
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-2xl font-black font-arcade text-amber-300 tracking-wider">
+              WHACK-A-DUCK!
+            </h1>
+            <span id="badge-phase" class="px-2.5 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-400/40 rounded-full text-[11px] font-bold uppercase tracking-wider">
+              Phase 1/3: Synonyms
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-300 mt-0.5">
+            <span>Player: <strong id="hud-student-name" class="text-amber-400 font-game text-sm">Guest Cadet</strong></span>
+            <span class="text-slate-500">•</span>
+            <span class="text-sky-300 font-semibold text-[11px]">UTAS Ibra GE3 Group 14</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Audio & Help Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleSound()" id="sound-btn" class="p-2 sm:p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button onclick="openWordBankModal()" class="px-3.5 py-2 sm:py-2.5 bg-indigo-600/80 hover:bg-indigo-500 text-white rounded-xl border border-indigo-400/40 text-xs font-bold transition shadow flex items-center gap-1">
+          📖 <span class="hidden sm:inline">Word Bank</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Performance Stats Bar -->
+    <div class="grid grid-cols-4 gap-2 mt-3 pt-2.5 border-t border-slate-800 text-center">
+      <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+        <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Total Score</span>
+        <span id="hud-score" class="font-game text-lg sm:text-2xl text-amber-400">0 / 30</span>
+      </div>
+      <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+        <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Streak</span>
+        <span id="hud-streak" class="font-game text-lg sm:text-2xl text-emerald-400">0x</span>
+      </div>
+      <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+        <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Phase Progress</span>
+        <span id="hud-progress" class="font-game text-lg sm:text-2xl text-sky-400">1 / 10</span>
+      </div>
+      <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+        <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Hull / Lives</span>
+        <span id="hud-lives" class="font-game text-base sm:text-xl text-rose-500">❤️❤️❤️</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Playground -->
+  <main class="max-w-5xl w-full mx-auto flex-1 flex flex-col justify-center">
+
+    <!-- Active Mission Target / Clue Card -->
+    <div id="mission-card" class="bg-slate-900/95 border-2 border-amber-400 rounded-3xl p-3.5 sm:p-5 text-center shadow-2xl relative mb-3 glow-gold">
+      <div class="flex items-center justify-between mb-1">
+        <span id="mission-mode-tag" class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/40 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+          ⭐ Phase 1: Match The Easy Synonym
+        </span>
+        <span id="mission-question-counter" class="text-xs font-bold text-sky-300 font-game">
+          Word 1 of 10
+        </span>
+      </div>
+
+      <p id="mission-instruction" class="text-xs sm:text-sm text-slate-300 font-semibold mb-1">
+        Whack the duck carrying the correct target word that matches this clue!
+      </p>
+
+      <h2 id="mission-clue-text" class="text-base sm:text-2xl md:text-3xl font-black text-amber-300 font-game px-2 py-1 leading-snug">
+        "Loading mission..."
+      </h2>
+
+      <!-- Phase Progress Bar -->
+      <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden mt-2.5 border border-slate-800">
+        <div id="phase-bar" class="h-full bg-gradient-to-r from-amber-400 via-sky-400 to-emerald-400 transition-all duration-300" style="width: 10%;"></div>
+      </div>
+    </div>
+
+    <!-- Pond Water Arena (6 Holes Grid) -->
+    <div class="relative bg-sky-950/80 border-4 border-sky-600/70 rounded-3xl p-3 sm:p-6 shadow-2xl overflow-hidden max-w-4xl mx-auto w-full">
+
+      <!-- Ambient Water Ripples Graphic Effect -->
+      <div class="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+      <div class="grid grid-cols-3 gap-3 sm:gap-6 relative z-10" id="pond-grid">
+
+        <!-- Water Hole 0 -->
+        <div class="relative flex flex-col items-center">
+          <div class="w-24 h-24 sm:w-36 sm:h-36 water-hole rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer" id="hole-0" onclick="whackDuck(0)">
+            <div class="duck-wrapper" id="duck-0">
+              <div class="flex flex-col items-center">
+                <!-- Word Sign -->
+                <div class="bg-gradient-to-b from-amber-100 to-amber-200 text-slate-950 font-black font-game text-[10px] sm:text-xs md:text-sm px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border-2 border-amber-800 shadow-md transform -rotate-1 pointer-events-none text-center max-w-[105px] truncate" id="sign-0">
+                  WORD
+                </div>
+                <!-- Cute Duck SVG -->
+                <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+                  <!-- Body -->
+                  <ellipse cx="50" cy="65" rx="30" ry="24" fill="#facc15" />
+                  <ellipse cx="68" cy="62" rx="14" ry="10" fill="#fde047" transform="rotate(-15 68 62)" />
+                  <!-- Head -->
+                  <circle cx="40" cy="40" r="18" fill="#facc15" />
+                  <!-- Eye -->
+                  <circle cx="34" cy="36" r="3.5" fill="#0f172a" />
+                  <circle cx="33" cy="35" r="1.2" fill="#ffffff" />
+                  <!-- Beak -->
+                  <path d="M24,40 C14,40 12,46 25,48 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                  <!-- Wing Highlight -->
+                  <path d="M45,55 Q62,50 68,64 Q55,75 45,55 Z" fill="#eab308" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="w-28 h-5 sm:w-40 sm:h-7 lily-pad -mt-3 z-20 pointer-events-none flex items-center justify-center text-[10px] text-emerald-200 opacity-80">🌸</div>
+        </div>
+
+        <!-- Water Hole 1 -->
+        <div class="relative flex flex-col items-center">
+          <div class="w-24 h-24 sm:w-36 sm:h-36 water-hole rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer" id="hole-1" onclick="whackDuck(1)">
+            <div class="duck-wrapper" id="duck-1">
+              <div class="flex flex-col items-center">
+                <div class="bg-gradient-to-b from-amber-100 to-amber-200 text-slate-950 font-black font-game text-[10px] sm:text-xs md:text-sm px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border-2 border-amber-800 shadow-md transform rotate-1 pointer-events-none text-center max-w-[105px] truncate" id="sign-1">
+                  WORD
+                </div>
+                <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+                  <ellipse cx="50" cy="65" rx="30" ry="24" fill="#facc15" />
+                  <ellipse cx="68" cy="62" rx="14" ry="10" fill="#fde047" transform="rotate(-15 68 62)" />
+                  <circle cx="40" cy="40" r="18" fill="#facc15" />
+                  <circle cx="34" cy="36" r="3.5" fill="#0f172a" />
+                  <circle cx="33" cy="35" r="1.2" fill="#ffffff" />
+                  <path d="M24,40 C14,40 12,46 25,48 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                  <path d="M45,55 Q62,50 68,64 Q55,75 45,55 Z" fill="#eab308" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="w-28 h-5 sm:w-40 sm:h-7 lily-pad -mt-3 z-20 pointer-events-none flex items-center justify-center text-[10px] text-emerald-200 opacity-80">🌸</div>
+        </div>
+
+        <!-- Water Hole 2 -->
+        <div class="relative flex flex-col items-center">
+          <div class="w-24 h-24 sm:w-36 sm:h-36 water-hole rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer" id="hole-2" onclick="whackDuck(2)">
+            <div class="duck-wrapper" id="duck-2">
+              <div class="flex flex-col items-center">
+                <div class="bg-gradient-to-b from-amber-100 to-amber-200 text-slate-950 font-black font-game text-[10px] sm:text-xs md:text-sm px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border-2 border-amber-800 shadow-md transform -rotate-2 pointer-events-none text-center max-w-[105px] truncate" id="sign-2">
+                  WORD
+                </div>
+                <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+                  <ellipse cx="50" cy="65" rx="30" ry="24" fill="#facc15" />
+                  <ellipse cx="68" cy="62" rx="14" ry="10" fill="#fde047" transform="rotate(-15 68 62)" />
+                  <circle cx="40" cy="40" r="18" fill="#facc15" />
+                  <circle cx="34" cy="36" r="3.5" fill="#0f172a" />
+                  <circle cx="33" cy="35" r="1.2" fill="#ffffff" />
+                  <path d="M24,40 C14,40 12,46 25,48 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                  <path d="M45,55 Q62,50 68,64 Q55,75 45,55 Z" fill="#eab308" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="w-28 h-5 sm:w-40 sm:h-7 lily-pad -mt-3 z-20 pointer-events-none flex items-center justify-center text-[10px] text-emerald-200 opacity-80">🌸</div>
+        </div>
+
+        <!-- Water Hole 3 -->
+        <div class="relative flex flex-col items-center">
+          <div class="w-24 h-24 sm:w-36 sm:h-36 water-hole rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer" id="hole-3" onclick="whackDuck(3)">
+            <div class="duck-wrapper" id="duck-3">
+              <div class="flex flex-col items-center">
+                <div class="bg-gradient-to-b from-amber-100 to-amber-200 text-slate-950 font-black font-game text-[10px] sm:text-xs md:text-sm px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border-2 border-amber-800 shadow-md transform rotate-2 pointer-events-none text-center max-w-[105px] truncate" id="sign-3">
+                  WORD
+                </div>
+                <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+                  <ellipse cx="50" cy="65" rx="30" ry="24" fill="#facc15" />
+                  <ellipse cx="68" cy="62" rx="14" ry="10" fill="#fde047" transform="rotate(-15 68 62)" />
+                  <circle cx="40" cy="40" r="18" fill="#facc15" />
+                  <circle cx="34" cy="36" r="3.5" fill="#0f172a" />
+                  <circle cx="33" cy="35" r="1.2" fill="#ffffff" />
+                  <path d="M24,40 C14,40 12,46 25,48 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                  <path d="M45,55 Q62,50 68,64 Q55,75 45,55 Z" fill="#eab308" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="w-28 h-5 sm:w-40 sm:h-7 lily-pad -mt-3 z-20 pointer-events-none flex items-center justify-center text-[10px] text-emerald-200 opacity-80">🌸</div>
+        </div>
+
+        <!-- Water Hole 4 -->
+        <div class="relative flex flex-col items-center">
+          <div class="w-24 h-24 sm:w-36 sm:h-36 water-hole rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer" id="hole-4" onclick="whackDuck(4)">
+            <div class="duck-wrapper" id="duck-4">
+              <div class="flex flex-col items-center">
+                <div class="bg-gradient-to-b from-amber-100 to-amber-200 text-slate-950 font-black font-game text-[10px] sm:text-xs md:text-sm px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border-2 border-amber-800 shadow-md transform -rotate-1 pointer-events-none text-center max-w-[105px] truncate" id="sign-4">
+                  WORD
+                </div>
+                <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+                  <ellipse cx="50" cy="65" rx="30" ry="24" fill="#facc15" />
+                  <ellipse cx="68" cy="62" rx="14" ry="10" fill="#fde047" transform="rotate(-15 68 62)" />
+                  <circle cx="40" cy="40" r="18" fill="#facc15" />
+                  <circle cx="34" cy="36" r="3.5" fill="#0f172a" />
+                  <circle cx="33" cy="35" r="1.2" fill="#ffffff" />
+                  <path d="M24,40 C14,40 12,46 25,48 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                  <path d="M45,55 Q62,50 68,64 Q55,75 45,55 Z" fill="#eab308" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="w-28 h-5 sm:w-40 sm:h-7 lily-pad -mt-3 z-20 pointer-events-none flex items-center justify-center text-[10px] text-emerald-200 opacity-80">🌸</div>
+        </div>
+
+        <!-- Water Hole 5 -->
+        <div class="relative flex flex-col items-center">
+          <div class="w-24 h-24 sm:w-36 sm:h-36 water-hole rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer" id="hole-5" onclick="whackDuck(5)">
+            <div class="duck-wrapper" id="duck-5">
+              <div class="flex flex-col items-center">
+                <div class="bg-gradient-to-b from-amber-100 to-amber-200 text-slate-950 font-black font-game text-[10px] sm:text-xs md:text-sm px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border-2 border-amber-800 shadow-md transform rotate-1 pointer-events-none text-center max-w-[105px] truncate" id="sign-5">
+                  WORD
+                </div>
+                <svg class="w-20 h-20 sm:w-28 sm:h-28" viewBox="0 0 100 100">
+                  <ellipse cx="50" cy="65" rx="30" ry="24" fill="#facc15" />
+                  <ellipse cx="68" cy="62" rx="14" ry="10" fill="#fde047" transform="rotate(-15 68 62)" />
+                  <circle cx="40" cy="40" r="18" fill="#facc15" />
+                  <circle cx="34" cy="36" r="3.5" fill="#0f172a" />
+                  <circle cx="33" cy="35" r="1.2" fill="#ffffff" />
+                  <path d="M24,40 C14,40 12,46 25,48 Z" fill="#f97316" stroke="#ea580c" stroke-width="1" />
+                  <path d="M45,55 Q62,50 68,64 Q55,75 45,55 Z" fill="#eab308" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="w-28 h-5 sm:w-40 sm:h-7 lily-pad -mt-3 z-20 pointer-events-none flex items-center justify-center text-[10px] text-emerald-200 opacity-80">🌸</div>
+        </div>
+
+      </div>
+
+      <!-- Splash FX Particle Node -->
+      <div id="splash-fx" class="pointer-events-none absolute hidden z-50 text-3xl font-black font-arcade text-amber-300 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
+        💦 QUACK!
+      </div>
+    </div>
+  </main>
+
+  <!-- Slide 1 / Cover Page Modal -->
+  <div id="cover-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 max-w-lg w-full rounded-3xl p-5 sm:p-7 text-center shadow-2xl space-y-4">
+      
+      <!-- Duck mascot badge -->
+      <div class="text-5xl animate-bounce">🦆</div>
+      
+      <h2 class="text-2xl sm:text-3xl font-black font-arcade text-amber-300 tracking-wider">
+        WHACK-A-DUCK!
+      </h2>
+      <p class="text-xs sm:text-sm text-sky-200 font-semibold">
+        Academic Vocabulary Mastery Challenge
+      </p>
+
+      <!-- Prominent Designer Label Requirement -->
+      <div class="bg-slate-950 p-3 rounded-2xl border-2 border-sky-400/50 shadow-inner space-y-1">
+        <span class="text-[10px] uppercase font-bold text-sky-400 tracking-widest block font-arcade">Curriculum Designer & Course:</span>
+        <p class="text-sm sm:text-base font-black text-amber-300 font-game">
+          Designed by Muhammad Shahzad _ Utas Ibra Ge3 group 14
+        </p>
+      </div>
+
+      <!-- Student Name Input (Mandatory) -->
+      <div class="bg-slate-950 p-3 sm:p-4 rounded-2xl border border-slate-800 text-left space-y-1.5">
+        <label for="input-student-name" class="text-xs uppercase font-bold text-amber-400 tracking-wider block">
+          Enter Student / Cadet Name:
+        </label>
+        <input 
+          type="text" 
+          id="input-student-name" 
+          placeholder="e.g. Salim Al-Harthy" 
+          class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-bold placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm"
+        >
+        <p id="name-warn" class="text-[11px] text-rose-400 font-bold hidden">
+          ⚠️ Please type your name before entering the duck pond!
+        </p>
+      </div>
+
+      <!-- 3 Phases Mission Roadmap -->
+      <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-left text-xs space-y-1.5 text-slate-300">
+        <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">3 Sequential Game Phases:</span>
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-4 bg-sky-500 text-slate-950 rounded-full font-bold flex items-center justify-center text-[10px]">1</span>
+          <span><strong>Phase 1: Easy Synonyms</strong> (Match the nearest easy alternative)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-4 bg-amber-500 text-slate-950 rounded-full font-bold flex items-center justify-center text-[10px]">2</span>
+          <span><strong>Phase 2: Antonyms</strong> (Whack the exact opposite meaning)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-4 bg-emerald-500 text-slate-950 rounded-full font-bold flex items-center justify-center text-[10px]">3</span>
+          <span><strong>Phase 3: Fill in the Blanks</strong> (Complete the academic sentence)</span>
+        </div>
+      </div>
+
+      <button onclick="enterGame()" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-base sm:text-lg rounded-2xl shadow-xl transition active:scale-95">
+        START PHASE 1 ▶
+      </button>
+    </div>
+  </div>
+
+  <!-- Phase Transition Checkpoint Modal -->
+  <div id="phase-transition-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-sky-400 max-w-lg w-full rounded-3xl p-5 sm:p-7 text-center shadow-2xl space-y-4">
+      <div class="text-5xl animate-bounce">⚡</div>
+      
+      <span class="px-3 py-1 bg-sky-500/20 text-sky-300 border border-sky-400/40 rounded-full text-xs font-bold uppercase tracking-widest inline-block" id="phase-tag-badge">
+        Checkpoint Cleared!
+      </span>
+
+      <h2 id="phase-transition-title" class="text-2xl sm:text-3xl font-black font-arcade text-sky-300">
+        Phase 1 Complete!
+      </h2>
+
+      <!-- Student Name Verification on Transition -->
+      <div class="bg-slate-950 px-4 py-2.5 rounded-xl border border-sky-500/30 flex items-center justify-between text-xs">
+        <span class="text-slate-400 uppercase font-bold tracking-wider">Candidate Name:</span>
+        <strong id="trans-student-name" class="text-amber-300 text-sm sm:text-base font-black font-game">Cadet Explorer</strong>
+      </div>
+
+      <!-- Score Breakdown for This Phase & Running Total -->
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 grid grid-cols-2 gap-3 text-left">
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-amber-500/20">
+          <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block" id="trans-this-label">Phase 1 Score</span>
+          <p id="trans-this-score" class="text-xl sm:text-2xl font-black font-game text-amber-300">0 / 10</p>
+        </div>
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-emerald-500/20">
+          <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Running Total</span>
+          <p id="trans-total-score" class="text-xl sm:text-2xl font-black font-game text-emerald-300">0 / 30</p>
+        </div>
+      </div>
+
+      <p id="phase-transition-desc" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+
+      <button onclick="startNextGamePhase()" id="btn-next-phase" class="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-slate-950 font-black text-base sm:text-lg rounded-2xl shadow-xl transition active:scale-95">
+        START NEXT PHASE ▶
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Mission Complete / Game Over Modal -->
+  <div id="game-over-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 max-w-xl w-full rounded-3xl p-5 sm:p-7 text-center shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+      
+      <div class="text-4xl sm:text-5xl">🏆</div>
+      <h2 id="final-title" class="text-2xl sm:text-3xl font-black font-arcade text-amber-400">
+        ALL 3 PHASES CLEARED!
+      </h2>
+
+      <!-- Candidate & Instructor Attribution Card -->
+      <div class="bg-slate-950 p-3 rounded-xl border border-sky-400/40 text-left text-xs space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 uppercase font-bold tracking-wider">Candidate / Student:</span>
+          <strong id="final-student-name" class="text-amber-300 text-sm font-black font-game">Salim Al-Harthy</strong>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800">
+          <span class="text-slate-400 uppercase font-bold tracking-wider">Course & Instructor:</span>
+          <span class="text-sky-300 font-semibold">Muhammad Shahzad _ Utas Ibra Ge3 group 14</span>
+        </div>
+      </div>
+
+      <!-- Grand Total Stats Grid -->
+      <div class="grid grid-cols-3 gap-2 text-left">
+        <div class="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+          <span class="text-[9px] uppercase font-bold text-slate-400 block">Grand Total</span>
+          <p id="final-total-score" class="text-lg sm:text-2xl font-black font-game text-amber-400">0 / 30</p>
+        </div>
+        <div class="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+          <span class="text-[9px] uppercase font-bold text-slate-400 block">Accuracy</span>
+          <p id="final-accuracy" class="text-lg sm:text-2xl font-black font-game text-emerald-400">0%</p>
+        </div>
+        <div class="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+          <span class="text-[9px] uppercase font-bold text-slate-400 block">Pond Rating</span>
+          <p id="final-rating" class="text-xs sm:text-base font-black font-game text-sky-300">Master Whacker</p>
+        </div>
+      </div>
+
+      <!-- Itemized 3 Phases Breakdown -->
+      <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-left text-xs space-y-1.5">
+        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Phase Mastery Scores:</span>
+        <div class="flex items-center justify-between text-slate-300" id="final-phase-1">
+          <span>Phase 1: Easy Synonyms</span>
+          <strong class="text-sky-400 font-bold">0 / 10</strong>
+        </div>
+        <div class="flex items-center justify-between text-slate-300" id="final-phase-2">
+          <span>Phase 2: Antonyms (Opposites)</span>
+          <strong class="text-amber-400 font-bold">0 / 10</strong>
+        </div>
+        <div class="flex items-center justify-between text-slate-300" id="final-phase-3">
+          <span>Phase 3: Fill in the Blanks</span>
+          <strong class="text-emerald-400 font-bold">0 / 10</strong>
+        </div>
+      </div>
+
+      <!-- Detailed Mission Review Log Table -->
+      <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-left text-xs overflow-y-auto max-h-36 pr-1 space-y-1.5" id="final-review-log">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="flex items-center gap-2.5 pt-1">
+        <button onclick="window.print()" class="w-1/2 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm rounded-xl transition">
+          🖨️ Print Certificate
+        </button>
+        <button onclick="restartGame()" class="w-1/2 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition">
+          PLAY AGAIN ↺
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Word Bank / Study Modal -->
+  <div id="wordbank-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border border-sky-500/50 max-w-2xl w-full rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-lg sm:text-xl font-bold font-arcade text-amber-300 flex items-center gap-2">
+          🦆 Target Academic Word Bank (10 Words)
+        </h3>
+        <button onclick="closeWordBankModal()" class="text-slate-400 hover:text-white font-bold text-xl px-2">✕</button>
+      </div>
+      <div class="overflow-y-auto my-3 space-y-2 pr-1" id="wordbank-list">
+        <!-- Injected via JS -->
+      </div>
+      <button onclick="closeWordBankModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-200 font-bold text-xs sm:text-sm">
+        Close Word Bank
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 10 Target Academic Words with Phase 1 (Easy Synonyms), Phase 2 (Antonyms), and Phase 3 (Gap-Fill)
+    const targetVocab = [
+      {
+        word: "observed",
+        synonym: "watched",
+        antonym: "ignored",
+        gap: "The marine biologist _______ the migration of sea turtles along the coast of Oman."
+      },
+      {
+        word: "generally",
+        synonym: "usually",
+        antonym: "rarely",
+        gap: "In Oman, summer temperatures are _______ much hotter than winter months."
+      },
+      {
+        word: "establish",
+        synonym: "create",
+        antonym: "destroy",
+        gap: "The Ministry plans to _______ a new renewable energy center in Ibra."
+      },
+      {
+        word: "previously",
+        synonym: "earlier",
+        antonym: "later",
+        gap: "The manager had _______ worked in banking before joining the college."
+      },
+      {
+        word: "extended families",
+        synonym: "large family",
+        antonym: "nuclear family",
+        gap: "In traditional Omani culture, _______ gather together for weekend feasts."
+      },
+      {
+        word: "social structure",
+        synonym: "community framework",
+        antonym: "chaos",
+        gap: "Education and employment play key roles in shaping modern _______."
+      },
+      {
+        word: "gender",
+        synonym: "male or female",
+        antonym: "no gender",
+        gap: "The university application asks students to indicate their age and _______."
+      },
+      {
+        word: "intense",
+        synonym: "powerful",
+        antonym: "mild",
+        gap: "Final exam revision requires _______ concentration and continuous focus."
+      },
+      {
+        word: "discipline",
+        synonym: "self-control",
+        antonym: "disorder",
+        gap: "Athletic success requires rigorous daily training and strict personal _______."
+      },
+      {
+        word: "replace",
+        synonym: "substitute",
+        antonym: "keep",
+        gap: "Electric cars are slowly beginning to _______ traditional petrol vehicles."
+      }
+    ];
+
+    // State Variables
+    let studentName = "Guest Cadet";
+    let currentPhase = 1; // 1: Synonyms, 2: Antonyms, 3: Fill in the Blanks
+    let phaseScores = { 1: 0, 2: 0, 3: 0 };
+    let questionQueue = [];
+    let activeIndex = 0;
+    let streak = 0;
+    let lives = 3;
+    let isPondActive = false;
+    let popInterval = null;
+    let activeDucks = [];
+    let duckStayTime = 1800; // ms
+    let gameHistory = [];
+    let soundEnabled = true;
+
+    // Web Audio Synthesizer (Zero External Assets)
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function soundQuack() {
+      if (!soundEnabled || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(140, audioCtx.currentTime + 0.16);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.16);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.16);
+    }
+
+    function soundSuccess() {
+      if (!soundEnabled || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+      osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.07); // E5
+      osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.14); // G5
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.28);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.28);
+    }
+
+    function soundSplashMistake() {
+      if (!soundEnabled || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.22);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.22);
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+    }
+
+    function enterGame() {
+      const input = document.getElementById('input-student-name');
+      const val = input.value.trim();
+      if (!val) {
+        document.getElementById('name-warn').classList.remove('hidden');
+        input.focus();
+        return;
+      }
+      document.getElementById('name-warn').classList.add('hidden');
+      studentName = val;
+
+      document.getElementById('hud-student-name').textContent = studentName;
+      document.getElementById('trans-student-name').textContent = studentName;
+      document.getElementById('final-student-name').textContent = studentName;
+
+      document.getElementById('cover-modal').classList.add('hidden');
+      document.getElementById('game-over-modal').classList.add('hidden');
+      document.getElementById('phase-transition-modal').classList.add('hidden');
+
+      initAudio();
+      phaseScores = { 1: 0, 2: 0, 3: 0 };
+      streak = 0;
+      gameHistory = [];
+      initializePhase(1);
+    }
+
+    function initializePhase(phaseNum) {
+      currentPhase = phaseNum;
+      activeIndex = 0;
+      lives = 3;
+      streak = 0;
+
+      // Shuffle all 10 words for this phase
+      questionQueue = [...targetVocab].sort(() => Math.random() - 0.5);
+
+      if (currentPhase === 1) {
+        duckStayTime = 2200;
+        document.getElementById('badge-phase').textContent = 'Phase 1/3: Easy Synonyms';
+        document.getElementById('mission-mode-tag').textContent = '⭐ Phase 1: Match The Easy Synonym';
+        document.getElementById('mission-instruction').textContent = 'Read the easy synonym and whack the duck carrying the target academic word!';
+      } else if (currentPhase === 2) {
+        duckStayTime = 1900;
+        document.getElementById('badge-phase').textContent = 'Phase 2/3: Antonyms';
+        document.getElementById('mission-mode-tag').textContent = '⚡ Phase 2: Match The Antonym (Opposite)';
+        document.getElementById('mission-instruction').textContent = 'Look at the opposite word and whack the duck with the matching target word!';
+      } else if (currentPhase === 3) {
+        duckStayTime = 1750;
+        document.getElementById('badge-phase').textContent = 'Phase 3/3: Fill In The Blanks';
+        document.getElementById('mission-mode-tag').textContent = '🎯 Phase 3: Sentence Gap-Fill';
+        document.getElementById('mission-instruction').textContent = 'Complete the sentence by whacking the duck holding the missing word!';
+      }
+
+      updateHud();
+      loadActiveQuestion();
+      isPondActive = true;
+      resumeDuckPond();
+    }
+
+    function loadActiveQuestion() {
+      if (activeIndex >= questionQueue.length) {
+        handlePhaseComplete();
+        return;
+      }
+
+      const q = questionQueue[activeIndex];
+      let clueText = "";
+      if (currentPhase === 1) {
+        clueText = `Synonym: "${q.synonym.toUpperCase()}"`;
+      } else if (currentPhase === 2) {
+        clueText = `Opposite of: "${q.antonym.toUpperCase()}"`;
+      } else if (currentPhase === 3) {
+        clueText = `"${q.gap}"`;
+      }
+
+      document.getElementById('mission-clue-text').textContent = clueText;
+      document.getElementById('mission-question-counter').textContent = `Word ${activeIndex + 1} of 10`;
+      
+      const pct = Math.round(((activeIndex + 1) / 10) * 100);
+      document.getElementById('phase-bar').style.width = `${pct}%`;
+
+      updateHud();
+      triggerPopDucks();
+    }
+
+    function triggerPopDucks() {
+      if (!isPondActive) return;
+
+      // Reset all ducks down
+      for (let i = 0; i < 6; i++) {
+        const duck = document.getElementById(`duck-${i}`);
+        if (duck) duck.classList.remove('up', 'whacked');
+      }
+
+      if (activeIndex >= questionQueue.length) return;
+
+      setTimeout(() => {
+        if (!isPondActive || activeIndex >= questionQueue.length) return;
+
+        const currentTarget = questionQueue[activeIndex];
+        const correctWord = currentTarget.word;
+
+        // Choose 3 distinct random holes out of 6
+        const holeIndices = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5).slice(0, 3);
+        const correctHole = holeIndices[0];
+        const falseHoles = [holeIndices[1], holeIndices[2]];
+
+        // 2 Distractor words
+        const distractors = targetVocab
+          .filter(item => item.word !== correctWord)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 2);
+
+        setupDuckSign(correctHole, correctWord, true);
+        setupDuckSign(falseHoles[0], distractors[0].word, false);
+        setupDuckSign(falseHoles[1], distractors[1].word, false);
+
+        holeIndices.forEach(idx => {
+          const d = document.getElementById(`duck-${idx}`);
+          if (d) d.classList.add('up');
+        });
+      }, 150);
+    }
+
+    function setupDuckSign(holeIdx, wordText, isCorrect) {
+      const sign = document.getElementById(`sign-${holeIdx}`);
+      const duck = document.getElementById(`duck-${holeIdx}`);
+      if (!sign || !duck) return;
+      sign.textContent = wordText;
+      duck.setAttribute('data-word', wordText);
+      duck.setAttribute('data-correct', isCorrect ? 'true' : 'false');
+    }
+
+    function whackDuck(holeIdx) {
+      if (!isPondActive) return;
+      const duck = document.getElementById(`duck-${holeIdx}`);
+      if (!duck || !duck.classList.contains('up') || duck.classList.contains('whacked')) return;
+
+      const isCorrect = duck.getAttribute('data-correct') === 'true';
+      const chosenWord = duck.getAttribute('data-word');
+      const currentTarget = questionQueue[activeIndex];
+
+      duck.classList.add('whacked');
+      soundQuack();
+      showSplashEffect(holeIdx, isCorrect);
+
+      if (isCorrect) {
+        soundSuccess();
+        streak++;
+        phaseScores[currentPhase]++;
+
+        gameHistory.push({
+          phase: currentPhase,
+          prompt: currentPhase === 1 ? currentTarget.synonym : (currentPhase === 2 ? currentTarget.antonym : currentTarget.gap),
+          targetWord: currentTarget.word,
+          selectedWord: chosenWord,
+          wasCorrect: true
+        });
+
+        activeIndex++;
+        updateHud();
+
+        setTimeout(() => {
+          if (isPondActive) loadActiveQuestion();
+        }, 320);
+
+      } else {
+        soundSplashMistake();
+        streak = 0;
+        lives--;
+
+        gameHistory.push({
+          phase: currentPhase,
+          prompt: currentPhase === 1 ? currentTarget.synonym : (currentPhase === 2 ? currentTarget.antonym : currentTarget.gap),
+          targetWord: currentTarget.word,
+          selectedWord: chosenWord,
+          wasCorrect: false
+        });
+
+        updateHud();
+
+        if (lives <= 0) {
+          handlePhaseComplete();
+        } else {
+          activeIndex++;
+          setTimeout(() => {
+            if (isPondActive) loadActiveQuestion();
+          }, 450);
+        }
+      }
+    }
+
+    function showSplashEffect(holeIdx, isGood) {
+      const hole = document.getElementById(`hole-${holeIdx}`);
+      if (!hole) return;
+      const rect = hole.getBoundingClientRect();
+      const fx = document.getElementById('splash-fx');
+      fx.style.left = `${rect.left + rect.width / 2 - 40}px`;
+      fx.style.top = `${rect.top - 10}px`;
+      fx.textContent = isGood ? "💦 QUACK! +1" : "💥 SPLASH! ✖";
+      fx.className = `pointer-events-none absolute z-50 text-2xl sm:text-3xl font-black font-arcade drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] ${isGood ? 'text-amber-300' : 'text-rose-400'} splash-star`;
+      fx.classList.remove('hidden');
+
+      setTimeout(() => {
+        fx.classList.add('hidden');
+        fx.classList.remove('splash-star');
+      }, 380);
+    }
+
+    function updateHud() {
+      const totalScore = phaseScores[1] + phaseScores[2] + phaseScores[3];
+      document.getElementById('hud-score').textContent = `${totalScore} / 30`;
+      document.getElementById('hud-streak').textContent = `${streak}x`;
+      document.getElementById('hud-progress').textContent = `${Math.min(activeIndex + 1, 10)} / 10`;
+
+      let hearts = '';
+      for (let i = 0; i < 3; i++) {
+        hearts += i < lives ? '❤️' : '🖤';
+      }
+      document.getElementById('hud-lives').textContent = hearts;
+    }
+
+    function resumeDuckPond() {
+      clearInterval(popInterval);
+      popInterval = setInterval(() => {
+        if (isPondActive) triggerPopDucks();
+      }, duckStayTime);
+    }
+
+    function handlePhaseComplete() {
+      isPondActive = false;
+      clearInterval(popInterval);
+
+      // Hide all ducks
+      for (let i = 0; i < 6; i++) {
+        const duck = document.getElementById(`duck-${i}`);
+        if (duck) duck.classList.remove('up', 'whacked');
+      }
+
+      const totalRunningScore = phaseScores[1] + phaseScores[2] + phaseScores[3];
+
+      if (currentPhase < 3) {
+        document.getElementById('trans-student-name').textContent = studentName;
+        document.getElementById('phase-transition-title').textContent = `Phase ${currentPhase} Complete!`;
+        document.getElementById('trans-this-label').textContent = `Phase ${currentPhase} Score`;
+        document.getElementById('trans-this-score').textContent = `${phaseScores[currentPhase]} / 10`;
+        document.getElementById('trans-total-score').textContent = `${totalRunningScore} / 30`;
+
+        if (currentPhase === 1) {
+          document.getElementById('phase-tag-badge').textContent = 'Synonyms Mastered!';
+          document.getElementById('phase-transition-desc').textContent = 
+            `Superb swimming, ${studentName}! You scored ${phaseScores[1]}/10 in Easy Synonyms. Ready for Phase 2: Antonyms (find the opposite meaning)?`;
+          document.getElementById('btn-next-phase').textContent = 'START PHASE 2 (ANTONYMS) ▶';
+        } else if (currentPhase === 2) {
+          document.getElementById('phase-tag-badge').textContent = 'Antonyms Mastered!';
+          document.getElementById('phase-transition-desc').textContent = 
+            `Brilliant reflex, ${studentName}! You earned ${phaseScores[2]}/10 in Antonyms. Now prepare for Phase 3: Fill in the Blanks!`;
+          document.getElementById('btn-next-phase').textContent = 'START PHASE 3 (GAP-FILL) ▶';
+        }
+
+        document.getElementById('phase-transition-modal').classList.remove('hidden');
+      } else {
+        showFinalGameOver();
+      }
+    }
+
+    function startNextGamePhase() {
+      document.getElementById('phase-transition-modal').classList.add('hidden');
+      initializePhase(currentPhase + 1);
+    }
+
+    function showFinalGameOver() {
+      isPondActive = false;
+      clearInterval(popInterval);
+
+      const totalScore = phaseScores[1] + phaseScores[2] + phaseScores[3];
+      const accuracy = Math.round((totalScore / 30) * 100);
+
+      document.getElementById('final-student-name').textContent = studentName;
+      document.getElementById('final-total-score').textContent = `${totalScore} / 30`;
+      document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+
+      let rating = "Duck Apprentice";
+      if (totalScore >= 27) rating = "Grand Pond Master 🦆👑";
+      else if (totalScore >= 20) rating = "Expert Quack Hunter ⭐";
+      else if (totalScore >= 14) rating = "Skilled Cadet 🎯";
+      document.getElementById('final-rating').textContent = rating;
+
+      document.getElementById('final-phase-1').innerHTML = `
+        <span>Phase 1: Easy Synonyms</span>
+        <strong class="text-sky-400 font-bold">${phaseScores[1]} / 10</strong>
+      `;
+      document.getElementById('final-phase-2').innerHTML = `
+        <span>Phase 2: Antonyms (Opposites)</span>
+        <strong class="text-amber-400 font-bold">${phaseScores[2]} / 10</strong>
+      `;
+      document.getElementById('final-phase-3').innerHTML = `
+        <span>Phase 3: Fill in the Blanks</span>
+        <strong class="text-emerald-400 font-bold">${phaseScores[3]} / 10</strong>
+      `;
+
+      const reviewLog = document.getElementById('final-review-log');
+      reviewLog.innerHTML = `
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
+          Detailed Performance Log (30 Multi-Phase Targets):
+        </div>
+      `;
+
+      gameHistory.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = `p-2 rounded-lg border text-[11px] ${
+          item.wasCorrect 
+            ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-200" 
+            : "bg-rose-950/40 border-rose-500/40 text-rose-200"
+        }`;
+        row.innerHTML = `
+          <div class="flex justify-between items-center font-bold mb-0.5">
+            <span>[P${item.phase}] #${idx + 1}: ${item.targetWord}</span>
+            <span>${item.wasCorrect ? "✔ Whacked Correctly" : "✖ Hit: " + item.selectedWord}</span>
+          </div>
+          <p class="text-[10px] text-slate-300 opacity-90">${item.prompt}</p>
+        `;
+        reviewLog.appendChild(row);
+      });
+
+      document.getElementById('game-over-modal').classList.remove('hidden');
+    }
+
+    function restartGame() {
+      document.getElementById('game-over-modal').classList.add('hidden');
+      document.getElementById('phase-transition-modal').classList.add('hidden');
+      document.getElementById('cover-modal').classList.remove('hidden');
+    }
+
+    function populateWordBank() {
+      const container = document.getElementById('wordbank-list');
+      container.innerHTML = '';
+      targetVocab.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs";
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-amber-400 font-black text-sm font-game">${idx + 1}. ${item.word}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-sky-900/40 text-sky-300 border border-sky-600/30">Target Word</span>
+          </div>
+          <p class="text-slate-200"><strong>Easy Synonym:</strong> <span class="text-sky-300 font-bold">${item.synonym}</span></p>
+          <p class="text-slate-200"><strong>Antonym (Opposite):</strong> <span class="text-amber-300 font-bold">${item.antonym}</span></p>
+          <p class="text-slate-300 text-[11px] mt-1 italic"><strong>Context:</strong> "${item.gap}"</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openWordBankModal() {
+      populateWordBank();
+      document.getElementById('wordbank-modal').classList.remove('hidden');
+    }
+
+    function closeWordBankModal() {
+      document.getElementById('wordbank-modal').classList.add('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      populateWordBank();
+    });
+  </script>
+</body>
+</html>
